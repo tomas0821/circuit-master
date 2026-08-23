@@ -6,6 +6,14 @@ authors:
   - family-names: "Rojas S."
     given-names: "Tomás"
 repository-code: "https://github.com/tomas0821/circuit-master"
+doi: 10.5281/zenodo.22072475
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22072475
+    description: "Concept DOI on Zenodo — always resolves to the latest release"
+  - type: doi
+    value: 10.5281/zenodo.22072476
+    description: "Version-specific DOI for release v1.0.0"
 license: "MIT"
 type: software
 preferred-citation:
