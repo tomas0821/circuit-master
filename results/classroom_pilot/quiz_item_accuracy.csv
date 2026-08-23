@@ -1,0 +1,11 @@
+question_number,question_text,domain,accuracy_pct,n_correct,n_incorrect,n_unattempted,n_total
+1,¿Cuánto mide la resistencia equivalente de dos resistores de 100 Ω conectados en serie?,resistor,67%,18,6,3,27
+2,Dos resistores de 100 Ω conectados en paralelo. ¿Cuál es su resistencia equivalente?,resistor,78%,21,4,2,27
+3,¿Cuál es la fórmula para calcular resistores en paralelo?,resistor,78%,21,4,2,27
+4,Un resistor de 100 Ω y uno de 200 Ω conectados en serie. ¿Resistencia total?,resistor,81%,22,3,2,27
+5,Un resistor de 100 Ω y uno de 200 Ω conectados en paralelo. ¿Resistencia total?,resistor,22%,6,16,5,27
+6,Dos capacitores de 10 µF conectados en serie. ¿Capacitancia equivalente?,capacitor,59%,16,8,3,27
+7,Dos capacitores de 10 µF conectados en paraleo. ¿Capacitancia equivalente?,capacitor,78%,21,4,2,27
+8,"En capacitores, la combinación en serie produce una capacitancia…",capacitor,48%,13,11,3,27
+9,"En la protoboard, los orificios A–E de la misma fila están…",breadboard,63%,17,6,4,27
+10,¿Qué separa la mitad izquierda de la mitad derecha de la protoboard?,breadboard,52%,14,11,2,27
