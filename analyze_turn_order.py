@@ -2,10 +2,18 @@
 Turn-order balance analysis (same-model, skill-neutral self-play games).
 
 Reproduces the statistical tests reported in the paper's Results (turn-order
-balance) and Appendix (statistical methodology): a binomial test and
-chi-square goodness-of-fit test on P1 vs. P2 wins among decisive (non-drawn)
-games, plus Welch's t-test and Mann-Whitney U on the P1/P2 score difference,
-computed separately for the resistance and capacitance modules.
+balance) and Appendix (statistical methodology):
+  - A binomial test and chi-square goodness-of-fit test on P1 vs. P2 wins
+    among decisive (non-drawn) games, plus Welch's t-test and Mann-Whitney U
+    on the P1/P2 score difference, against the null of "no difference."
+  - A TOST (two one-sided tests) equivalence test on both the win-rate and
+    the score difference, against a pre-specified margin of practical
+    balance. A non-significant result on the tests above only means we
+    failed to reject "no difference" — it does not itself demonstrate
+    equivalence. The equivalence margin is ±10 percentage points on win
+    rate (a designer's judgment call about what counts as a practically
+    fair turn order) and ±0.2 pooled-SD on score (a conventional small-effect
+    threshold, in raw points).
 
 Because same-model games place an identical model on both seats, any
 systematic P1-vs-P2 asymmetry here is attributable to the game's turn-order
@@ -14,9 +22,14 @@ design, not to a skill difference between the two AI models.
 
 import csv
 import glob
+import numpy as np
 from scipy import stats
+from statsmodels.stats.weightstats import ttost_ind
 
 DATA_DIR = "results/cluster_runs"
+
+WIN_RATE_MARGIN = 0.10   # +/- 10 percentage points around 50%
+SCORE_EFFECT_SIZE_MARGIN = 0.2  # Cohen's d, converted to raw points via pooled SD
 
 
 def to_float(v, default=0.0):
@@ -37,6 +50,18 @@ def load_same_model_rows():
                 row["mode"] = mode
                 rows.append(row)
     return rows
+
+
+def one_sample_prop_tost(successes, n, null=0.5, low=-WIN_RATE_MARGIN, upp=WIN_RATE_MARGIN, alpha=0.05):
+    """TOST for one proportion vs a null value, equivalence region [null+low, null+upp]."""
+    p_hat = successes / n
+    se = np.sqrt(p_hat * (1 - p_hat) / n)
+    z_low = (p_hat - null - low) / se
+    p_low = 1 - stats.norm.cdf(z_low)
+    z_upp = (p_hat - null - upp) / se
+    p_upp = stats.norm.cdf(z_upp)
+    equivalent = (p_low < alpha) and (p_upp < alpha)
+    return p_hat, p_low, p_upp, equivalent
 
 
 def analyze_mode(rows, mode):
@@ -62,6 +87,16 @@ def analyze_mode(rows, mode):
     print(f"  P1 avg score = {sum(p1_scores)/n:.1f}, P2 avg score = {sum(p2_scores)/n:.1f}")
     print(f"  Score Welch's t-test: t={t_stat:.3f}, p={t_p:.5f}")
     print(f"  Score Mann-Whitney U: U={u_stat:.1f}, p={u_p:.5f}")
+
+    p_hat, p_low, p_upp, equiv = one_sample_prop_tost(p1_wins, decisive)
+    print(f"  Win-rate TOST (equivalence margin 50%+/-{WIN_RATE_MARGIN:.0%}): "
+          f"lower-test p={p_low:.5f}, upper-test p={p_upp:.5f}, EQUIVALENT={equiv}")
+
+    pooled_sd = np.sqrt((np.var(p1_scores, ddof=1) + np.var(p2_scores, ddof=1)) / 2)
+    margin = SCORE_EFFECT_SIZE_MARGIN * pooled_sd
+    tost_p, _, _ = ttost_ind(p1_scores, p2_scores, -margin, margin, usevar="unequal")
+    print(f"  Score TOST (equivalence margin +/-{margin:.2f} pts, Cohen's d={SCORE_EFFECT_SIZE_MARGIN}): "
+          f"p={tost_p:.5f}, EQUIVALENT={tost_p < 0.05}")
     print()
 
 
