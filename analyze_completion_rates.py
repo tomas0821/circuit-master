@@ -22,6 +22,18 @@ bug caused a real error in an earlier paper draft (a claim that a 4-component ti
 was "never chosen as a target, 0 of 9,618 calls" when it was in fact chosen 10
 times — all on final turns, none completed). Fixed here.
 
+That first fix introduced a second, subtler bug, caught by a later cross-model
+referee pass: the match's final CSV score includes a +10-per-objective completion
+bonus (get_final_scores() in breadboard_game.py, applied once at game end across
+every objective the player ever completed), but the trace's per-turn running score
+never includes it (self.scores[pid] += obj.points only). Comparing a final-turn
+trace score directly against the raw CSV final score was therefore comparing two
+scores on different bases whenever the player had completed anything at all that
+game — silently undercounting final-turn completions, which matter a lot here
+since final turns are the majority of Mixed-tier attempts. Fixed by subtracting
+the CSV's own completion-bonus contribution (10 * p{1,2}_complete_scored) back out
+before comparing, in _load_final_scores().
+
 Used for PAPER_Circuit_Surge_final.md (component-count vs. category difficulty).
 
 Output: printed tables (resistance and capacitance, per-card and per-category).
@@ -55,13 +67,32 @@ CAPACITANCE_CARDS = {
 }
 
 
+COMPLETION_BONUS = 10  # get_final_scores() in breadboard_game.py: +10 per completed objective
+
+
 def _load_final_scores(csv_path):
-    """match -> [p1_final_score, p2_final_score]"""
+    """match -> [p1_score_no_bonus, p2_score_no_bonus]
+
+    The CSV's own p1_score/p2_score are *final* scores — they include a +10 bonus per
+    objective the player completed anywhere in the game (get_final_scores() adds
+    10 * len(completed_objectives) once, at game end). The per-turn trace's running
+    `scores` field never includes this bonus (self.scores[pid] += obj.points only).
+    Comparing a trace score directly against the raw CSV final score is therefore an
+    apples-to-oranges mismatch whenever the player completed anything, all game long —
+    so we strip the bonus back out here using p{1,2}_complete_scored (the CSV's own
+    count of real completions, which is exactly get_final_scores()'s bonus multiplier)
+    to make the final score comparable to the trace's bonus-free running scores.
+    """
     final = {}
     try:
         with open(csv_path) as fh:
             for row in csv.DictReader(fh):
-                final[int(row["match"])] = [float(row["p1_score"]), float(row["p2_score"])]
+                p1_bonus = COMPLETION_BONUS * int(row["p1_complete_scored"])
+                p2_bonus = COMPLETION_BONUS * int(row["p2_complete_scored"])
+                final[int(row["match"])] = [
+                    float(row["p1_score"]) - p1_bonus,
+                    float(row["p2_score"]) - p2_bonus,
+                ]
     except FileNotFoundError:
         pass
     return final
