@@ -3,9 +3,15 @@ Turn-order balance analysis (same-model, skill-neutral self-play games).
 
 Reproduces the statistical tests reported in the paper's Results (turn-order
 balance) and Appendix (statistical methodology):
-  - A binomial test and chi-square goodness-of-fit test on P1 vs. P2 wins
-    among decisive (non-drawn) games, plus Welch's t-test and Mann-Whitney U
-    on the P1/P2 score difference, against the null of "no difference."
+  - A binomial test on P1 vs. P2 wins among decisive (non-drawn) games,
+    against the null of "no difference."
+  - A paired t-test and Wilcoxon signed-rank test on the per-game P1-P2
+    score difference, against the null of "no difference." P1 and P2 scores
+    come from the same match (same shared deck, same board) and are
+    therefore paired observations, not independent samples — an earlier
+    version of this script used Welch's t-test and Mann-Whitney U (treating
+    the two score samples as independent), which a cross-model referee
+    review flagged as the wrong test for this design. Fixed here.
   - A TOST (two one-sided tests) equivalence test on both the win-rate and
     the score difference, against a pre-specified margin of practical
     balance. A non-significant result on the tests above only means we
@@ -13,7 +19,10 @@ balance) and Appendix (statistical methodology):
     equivalence. The equivalence margin is ±10 percentage points on win
     rate (a designer's judgment call about what counts as a practically
     fair turn order) and ±0.2 pooled-SD on score (a conventional small-effect
-    threshold, in raw points).
+    threshold, in raw points; kept in raw points computed from the pooled
+    SD of the two samples even for the paired TOST, so the practical-
+    significance threshold means the same thing regardless of which test
+    evaluates it).
 
 Because same-model games place an identical model on both seats, any
 systematic P1-vs-P2 asymmetry here is attributable to the game's turn-order
@@ -24,7 +33,7 @@ import csv
 import glob
 import numpy as np
 from scipy import stats
-from statsmodels.stats.weightstats import ttost_ind
+from statsmodels.stats.weightstats import ttost_paired
 
 DATA_DIR = "results/cluster_runs"
 
@@ -75,18 +84,23 @@ def analyze_mode(rows, mode):
     binom = stats.binomtest(p1_wins, decisive, 0.5, alternative="two-sided")
     chi2, chi_p = stats.chisquare([p1_wins, p2_wins], f_exp=[decisive / 2, decisive / 2])
 
-    p1_scores = [to_float(r["p1_score"]) for r in mode_rows]
-    p2_scores = [to_float(r["p2_score"]) for r in mode_rows]
-    t_stat, t_p = stats.ttest_ind(p1_scores, p2_scores, equal_var=False)
-    u_stat, u_p = stats.mannwhitneyu(p1_scores, p2_scores, alternative="two-sided")
+    p1_scores = np.array([to_float(r["p1_score"]) for r in mode_rows])
+    p2_scores = np.array([to_float(r["p2_score"]) for r in mode_rows])
+    diffs = p1_scores - p2_scores
+    corr = np.corrcoef(p1_scores, p2_scores)[0, 1]
+
+    # Paired tests (correct: P1/P2 scores share a match, a deck, a board)
+    t_stat, t_p = stats.ttest_1samp(diffs, 0)
+    w_stat, w_p = stats.wilcoxon(diffs)
 
     print(f"=== {mode} (n={n} games, {decisive} decisive, {draws} draws) ===")
     print(f"  P1 win rate among decisive: {p1_wins}/{decisive} = {p1_wins/decisive:.1%}")
     print(f"  Binomial test vs 50%: p = {binom.pvalue:.5f}")
     print(f"  Chi-square (P1 vs P2 wins): chi2={chi2:.3f}, p={chi_p:.5f}")
-    print(f"  P1 avg score = {sum(p1_scores)/n:.1f}, P2 avg score = {sum(p2_scores)/n:.1f}")
-    print(f"  Score Welch's t-test: t={t_stat:.3f}, p={t_p:.5f}")
-    print(f"  Score Mann-Whitney U: U={u_stat:.1f}, p={u_p:.5f}")
+    print(f"  P1 avg score = {p1_scores.mean():.1f}, P2 avg score = {p2_scores.mean():.1f}, "
+          f"corr(P1,P2)={corr:.3f}")
+    print(f"  Score paired t-test (on per-game P1-P2 diff): t={t_stat:.3f}, p={t_p:.5f}")
+    print(f"  Score Wilcoxon signed-rank (paired): W={w_stat:.1f}, p={w_p:.5f}")
 
     p_hat, p_low, p_upp, equiv = one_sample_prop_tost(p1_wins, decisive)
     print(f"  Win-rate TOST (equivalence margin 50%+/-{WIN_RATE_MARGIN:.0%}): "
@@ -94,8 +108,8 @@ def analyze_mode(rows, mode):
 
     pooled_sd = np.sqrt((np.var(p1_scores, ddof=1) + np.var(p2_scores, ddof=1)) / 2)
     margin = SCORE_EFFECT_SIZE_MARGIN * pooled_sd
-    tost_p, _, _ = ttost_ind(p1_scores, p2_scores, -margin, margin, usevar="unequal")
-    print(f"  Score TOST (equivalence margin +/-{margin:.2f} pts, Cohen's d={SCORE_EFFECT_SIZE_MARGIN}): "
+    tost_p, _, _ = ttost_paired(p1_scores, p2_scores, -margin, margin)
+    print(f"  Score TOST, paired (equivalence margin +/-{margin:.2f} pts, Cohen's d={SCORE_EFFECT_SIZE_MARGIN}): "
           f"p={tost_p:.5f}, EQUIVALENT={tost_p < 0.05}")
     print()
 
