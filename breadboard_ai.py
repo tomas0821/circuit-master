@@ -4,6 +4,7 @@ import json
 import re
 import copy
 import time
+import requests
 from breadboard_game import ResistorCard, WireCard, PlacedComp
 from openai import OpenAI
 
@@ -422,10 +423,20 @@ class HybridAgent:
         self.model = model
 
         # Local Ollama only — this is what produced the released self-play corpus.
+        ollama_base = base_url or "http://localhost:11434/v1"
         self.client = OpenAI(
-            base_url=base_url or "http://localhost:11434/v1",
+            base_url=ollama_base,
             api_key="ollama",
         )
+        # Ollama's OpenAI-compatible endpoint (/v1/chat/completions) does not
+        # honor any thinking-disable parameter we've tried (extra_body with
+        # "thinking":{"type":"disabled"} or "think":False are both silently
+        # ignored, verified against Ollama 0.12.6) -- a thinking-capable model
+        # like Qwen3 burns its whole max_tokens budget on hidden reasoning and
+        # returns empty content every time. Ollama's *native* /api/chat endpoint
+        # does honor a top-level "think": false and returns clean content in
+        # ~500ms. Use it directly, bypassing the OpenAI client for this call.
+        self._ollama_chat_url = ollama_base.rstrip("/").removesuffix("/v1") + "/api/chat"
 
         self.heuristic = HeuristicAgent(name=f"{name}_heuristic", player_idx=player_idx)
 
@@ -599,20 +610,23 @@ class HybridAgent:
         import time as _time
         t0 = _time.time()
         try:
-            resp = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": user_content}],
-                max_tokens=200,
-                temperature=0.3,
-                extra_body={"thinking": {"type": "disabled"}},
+            # Native Ollama endpoint: the only way that actually disables
+            # thinking (see __init__ comment) -- OpenAI-compat extra_body
+            # params are silently ignored for thinking-capable models.
+            r = requests.post(
+                self._ollama_chat_url,
+                json={
+                    "model": self.model,
+                    "messages": [{"role": "user", "content": user_content}],
+                    "think": False,
+                    "stream": False,
+                    "options": {"num_predict": 200, "temperature": 0.3},
+                },
+                timeout=60,
             )
+            r.raise_for_status()
+            raw = (r.json().get("message", {}).get("content") or "").strip()
             trace["elapsed_ms"] = round((_time.time() - t0) * 1000)
-            msg = resp.choices[0].message
-            raw = (msg.content or "").strip()
-            # Fallback: some thinking models put the answer in reasoning_content
-            if not raw:
-                extras = getattr(msg, "model_extra", {}) or {}
-                raw = (extras.get("reasoning_content") or "").strip()
             # Strip markdown fences if present
             raw = re.sub(r"^```[a-z]*\n?", "", raw).rstrip("` \n")
             trace["raw_response"] = raw
