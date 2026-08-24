@@ -6,21 +6,28 @@ resistance only, pooling all capacitance objectives into one field, and cannot
 separate how often a category is *attempted* from how often it *succeeds once
 attempted*. This script reconstructs a per-objective-card completion rate directly
 from the per-turn trace logs (*_trace.jsonl): for each strategy call, it checks
-whether the score change on that player's next turn exactly matches the chosen
-focus objective's point value, and treats that as evidence the objective was
+whether the player's score increased by exactly the chosen focus objective's point
+value by the time of the next signal, and treats that as evidence the objective was
 completed.
 
-This slightly undercounts true completions (a match's final turn per player has
-no subsequent turn to check against, so it is excluded from the denominator) but
-does not introduce false positives, since an exact point-value match on the
-immediately following turn is a specific signal.
+For all but a player's last turn, "the next signal" is that player's next trace
+entry. For a player's LAST turn in a match, there is no next trace entry, so this
+script falls back to the match's final score for that player (from the summary
+CSV) as the next signal. An earlier version of this script did not do this
+fallback and silently excluded every player's final turn from both the attempt
+and completion counts — which is fine for an "attempted" count (a final-turn pick
+is still an attempt) but wrongly conflated "we didn't measure this" with "this
+never happened" for any analysis that read the attempt count as exhaustive. That
+bug caused a real error in an earlier paper draft (a claim that a 4-component tier
+was "never chosen as a target, 0 of 9,618 calls" when it was in fact chosen 10
+times — all on final turns, none completed). Fixed here.
 
-Used for PAPER_Circuit_Surge_final.md §4.2/§4.3 (component-count vs. category
-difficulty) and §5.3.1 (education cross-check).
+Used for PAPER_Circuit_Surge_final.md (component-count vs. category difficulty).
 
 Output: printed tables (resistance and capacitance, per-card and per-category).
 """
 
+import csv
 import json
 import glob
 import collections
@@ -48,14 +55,30 @@ CAPACITANCE_CARDS = {
 }
 
 
+def _load_final_scores(csv_path):
+    """match -> [p1_final_score, p2_final_score]"""
+    final = {}
+    try:
+        with open(csv_path) as fh:
+            for row in csv.DictReader(fh):
+                final[int(row["match"])] = [float(row["p1_score"]), float(row["p2_score"])]
+    except FileNotFoundError:
+        pass
+    return final
+
+
 def reconstruct(mode, cards):
     files = sorted(glob.glob(f"{DATA_DIR}/*{mode}*_trace.jsonl"))
     focus_attempts = collections.Counter()
     focus_completion = collections.Counter()
     cat_attempts = collections.Counter()
     cat_completion = collections.Counter()
+    final_turn_attempts = collections.Counter()
 
     for fp in files:
+        csv_path = fp.replace("_trace.jsonl", ".csv")
+        final_scores = _load_final_scores(csv_path)
+
         matches = collections.defaultdict(list)
         with open(fp) as fh:
             for line in fh:
@@ -64,22 +87,32 @@ def reconstruct(mode, cards):
                     continue
                 d = json.loads(line)
                 matches[d["match"]].append(d)
-        for entries in matches.values():
+        for match_id, entries in matches.items():
             entries.sort(key=lambda x: x["turn"])
             for player in (0, 1):
                 p_entries = sorted(
                     (e for e in entries if e["player"] == player),
                     key=lambda x: x["turn"],
                 )
-                for i in range(len(p_entries) - 1):
-                    cur, nxt = p_entries[i], p_entries[i + 1]
+                for i in range(len(p_entries)):
+                    cur = p_entries[i]
                     focus = cur.get("focus")
                     if focus not in cards:
                         continue
                     cat, n = cards[focus]
                     focus_attempts[focus] += 1
                     cat_attempts[cat] += 1
-                    delta = nxt["scores"][player] - cur["scores"][player]
+
+                    is_last = i == len(p_entries) - 1
+                    if is_last:
+                        final_turn_attempts[cat] += 1
+                        if match_id not in final_scores:
+                            continue  # no summary CSV row to fall back on; skip completion check
+                        next_score = final_scores[match_id][player]
+                    else:
+                        next_score = p_entries[i + 1]["scores"][player]
+
+                    delta = next_score - cur["scores"][player]
                     if delta > 0:
                         obj = next(
                             (o for o in cur["objectives"] if o["desc"] == focus), None
@@ -88,18 +121,19 @@ def reconstruct(mode, cards):
                             focus_completion[focus] += 1
                             cat_completion[cat] += 1
 
-    return focus_attempts, focus_completion, cat_attempts, cat_completion
+    return focus_attempts, focus_completion, cat_attempts, cat_completion, final_turn_attempts
 
 
 def report(mode, cards):
-    focus_attempts, focus_completion, cat_attempts, cat_completion = reconstruct(mode, cards)
+    focus_attempts, focus_completion, cat_attempts, cat_completion, final_turn_attempts = reconstruct(mode, cards)
     print(f"=== {mode} ===")
-    print("Per-category completion rate (once chosen as focus):")
+    print("Per-category completion rate (all attempts, including final-turn ones):")
     for cat in ["series", "parallel", "mixed", "bridge"]:
         a = cat_attempts[cat]
         c = cat_completion[cat]
+        ft = final_turn_attempts[cat]
         if a:
-            print(f"  {cat:10} attempts={a:5} completions={c:5} rate={c / a:.1%}")
+            print(f"  {cat:10} attempts={a:5} (of which final-turn={ft:4}) completions={c:5} rate={c / a:.1%}")
         else:
             print(f"  {cat:10} attempts=0 (never chosen as focus)")
     print("\nPer-card completion rate:")
