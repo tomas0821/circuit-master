@@ -14,6 +14,9 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.22087643
     description: "Version-specific DOI for release v1.1.0"
+  - type: doi
+    value: 10.5281/zenodo.22112387
+    description: "Version-specific DOI for release v1.1.1"
 license: "MIT"
 type: software
 preferred-citation:
