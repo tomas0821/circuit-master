@@ -1,5 +1,5 @@
 """
-Generate a printable deck of Circuit Surge cards — Spanish version.
+Generate a printable deck of Circuit Master cards — Spanish version.
 Output: deck_a4_fronts_es.pdf, deck_a4_backs_es.pdf, deck_a4_print_es.pdf,
         components_a4_fronts_es.pdf, components_a4_backs_es.pdf, components_a4_print_es.pdf,
         deck_objective_cards_es.png
@@ -292,7 +292,7 @@ with PdfPages('deck_a4_fronts_es.pdf') as pdf:
         page_cards = CARDS[page * PER_PAGE : (page + 1) * PER_PAGE]
 
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Frentes de Cartas  (página {page + 1} de {n_pages})",
+                 f"CIRCUIT MASTER  ·  Frentes de Cartas  (página {page + 1} de {n_pages})",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)
 
@@ -318,7 +318,7 @@ with PdfPages('deck_a4_backs_es.pdf') as pdf:
         n_this = min(PER_PAGE, len(CARDS) - page * PER_PAGE)
 
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Reversos de Cartas  (página {page + 1} de {n_pages})"
+                 f"CIRCUIT MASTER  ·  Reversos de Cartas  (página {page + 1} de {n_pages})"
                  "  — imprimir al reverso",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)
@@ -349,7 +349,7 @@ fig_h = N_ROWS * CARD_H + (N_ROWS - 1) * GAP + 2 * MARGIN + 0.5
 
 fig = plt.figure(figsize=(fig_w, fig_h), facecolor='#eeeeee')
 fig.text(0.5, 1 - 0.18 / fig_h,
-         "CIRCUIT SURGE  ·  Mazo de Cartas Objetivo",
+         "CIRCUIT MASTER  ·  Mazo de Cartas Objetivo",
          ha='center', va='top', fontsize=13, fontweight='bold', color='#222',
          transform=fig.transFigure)
 
@@ -466,7 +466,7 @@ with PdfPages('components_a4_fronts_es.pdf') as pdf:
         page_cards = COMPONENT_CARDS[page * PER_PAGE:(page + 1) * PER_PAGE]
         fig = plt.figure(figsize=(A4_W, A4_H), facecolor='white')
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Cartas de Componentes  (página {page + 1} de {n_pages_c})",
+                 f"CIRCUIT MASTER  ·  Cartas de Componentes  (página {page + 1} de {n_pages_c})",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)
         for i, card in enumerate(page_cards):
@@ -489,7 +489,7 @@ with PdfPages('components_a4_backs_es.pdf') as pdf:
         n_this = min(PER_PAGE, n_comp - page * PER_PAGE)
         fig = plt.figure(figsize=(A4_W, A4_H), facecolor='white')
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Reversos de Componentes  (página {page + 1} de {n_pages_c})"
+                 f"CIRCUIT MASTER  ·  Reversos de Componentes  (página {page + 1} de {n_pages_c})"
                  "  — imprimir al reverso",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)

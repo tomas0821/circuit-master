@@ -1,5 +1,5 @@
 """
-Generate a printable deck of Circuit Surge objective cards.
+Generate a printable deck of Circuit Master objective cards.
 Each card is 2.5" × 3.5" (standard playing-card size) at 200 DPI.
 Output: deck_objective_cards.png
 """
@@ -320,7 +320,7 @@ with PdfPages('deck_a4_fronts.pdf') as pdf:
         page_cards = CARDS[page * PER_PAGE : (page + 1) * PER_PAGE]
 
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Card Fronts  (page {page + 1} of {n_pages})",
+                 f"CIRCUIT MASTER  ·  Card Fronts  (page {page + 1} of {n_pages})",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)
 
@@ -346,7 +346,7 @@ with PdfPages('deck_a4_backs.pdf') as pdf:
         n_this = min(PER_PAGE, len(CARDS) - page * PER_PAGE)
 
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Card Backs  (page {page + 1} of {n_pages})"
+                 f"CIRCUIT MASTER  ·  Card Backs  (page {page + 1} of {n_pages})"
                  "  — print on reverse side",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)
@@ -377,7 +377,7 @@ fig_h = N_ROWS * CARD_H + (N_ROWS - 1) * GAP + 2 * MARGIN + 0.5
 
 fig = plt.figure(figsize=(fig_w, fig_h), facecolor='#eeeeee')
 fig.text(0.5, 1 - 0.18 / fig_h,
-         "CIRCUIT SURGE  ·  Objective Card Deck",
+         "CIRCUIT MASTER  ·  Objective Card Deck",
          ha='center', va='top', fontsize=13, fontweight='bold', color='#222',
          transform=fig.transFigure)
 
@@ -504,7 +504,7 @@ with PdfPages('components_a4_fronts.pdf') as pdf:
         page_cards = COMPONENT_CARDS[page * PER_PAGE:(page + 1) * PER_PAGE]
         fig = plt.figure(figsize=(A4_W, A4_H), facecolor='white')
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Component Cards  (page {page + 1} of {n_pages_c})",
+                 f"CIRCUIT MASTER  ·  Component Cards  (page {page + 1} of {n_pages_c})",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)
         for i, card in enumerate(page_cards):
@@ -527,7 +527,7 @@ with PdfPages('components_a4_backs.pdf') as pdf:
         n_this = min(PER_PAGE, n_comp - page * PER_PAGE)
         fig = plt.figure(figsize=(A4_W, A4_H), facecolor='white')
         fig.text(0.5, (A4_H - MARGIN_Y * 0.6) / A4_H,
-                 f"CIRCUIT SURGE  ·  Component Backs  (page {page + 1} of {n_pages_c})"
+                 f"CIRCUIT MASTER  ·  Component Backs  (page {page + 1} of {n_pages_c})"
                  "  — print on reverse side",
                  ha='center', va='top', fontsize=9, color='#444',
                  transform=fig.transFigure)

@@ -1,10 +1,10 @@
-# Circuit Surge
+# Circuit Master
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22072475.svg)](https://doi.org/10.5281/zenodo.22072475)
 
 A two-player board game for teaching series and parallel resistor and capacitor circuits. Players build circuits on a shared breadboard, drawing resistor/capacitor cards to match target-value Objective cards for points.
 
-Circuit Surge was balance-tested before classroom deployment using AI self-play — open-source language models playing the game against each other at volume — to catch design flaws (an unreachable objective tier, a turn-order imbalance) that a small human playtest pool would likely miss. This repository contains everything needed to print and play the game, reproduce the self-play balance-testing analysis, and inspect the classroom pilot data.
+Circuit Master was balance-tested before classroom deployment using AI self-play — open-source language models playing the game against each other at volume — to catch design flaws (an unreachable objective tier, a turn-order imbalance) that a small human playtest pool would likely miss. This repository contains everything needed to print and play the game, reproduce the self-play balance-testing analysis, and inspect the classroom pilot data.
 
 A paper describing the game, the self-play methodology, and the classroom pilot is [in preparation / forthcoming — citation to follow].
 
@@ -119,7 +119,7 @@ Python 3.10+. `ffmpeg` (system install, not pip) is needed only for `test_suite.
 If you use this game, its code, or the released data, please cite the associated paper (details to be added upon publication) and/or this repository:
 
 ```
-Rojas S., T. (2026). Circuit Surge. https://doi.org/10.5281/zenodo.22072475
+Rojas S., T. (2026). Circuit Master. https://doi.org/10.5281/zenodo.22072475
 ```
 
 ## License

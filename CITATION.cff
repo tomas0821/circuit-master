@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, game, or data, please cite the associated paper (see preferred-citation) and/or this repository."
-title: "Circuit Surge"
+title: "Circuit Master"
 abstract: "A two-player board game for teaching series and parallel resistor and capacitor circuits, balance-tested via AI self-play before classroom deployment. This repository contains the game (print-ready materials and a digital engine), the self-play balance-testing code and data, and anonymized classroom pilot data."
 authors:
   - family-names: "Rojas S."
@@ -18,7 +18,7 @@ license: "MIT"
 type: software
 preferred-citation:
   type: article
-  title: "Circuit Surge: an AI-playtested board game for teaching series and parallel circuits"
+  title: "Circuit Master: an AI-playtested board game for teaching series and parallel circuits"
   authors:
     - family-names: "Rojas S."
       given-names: "Tomás"
